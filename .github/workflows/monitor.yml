@@ -1,0 +1,52 @@
+name: Nordic chart date monitor
+on:
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: Read dates without sending email or changing state
+        type: boolean
+        default: true
+  schedule:
+    - cron: '3,13,23,33,43,53 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: nordic-chart-monitor
+  cancel-in-progress: false
+jobs:
+  check:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.MONITOR_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Check chart dates
+        env:
+          PROBE: ${{ github.event_name == 'workflow_dispatch' && inputs.probe }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+        run: |
+          if [ "$PROBE" = "true" ]; then
+            npm run check -- --probe
+          else
+            npm run check
+          fi
+      - name: Save dates and queued emails
+        if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.probe) }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add state.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update chart date monitor state'
+            git push
+          fi
