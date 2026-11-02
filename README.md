@@ -2,6 +2,8 @@
 
 Prototype: watches the displayed date on Spotify's public Top 50 playlists for Sweden, Norway, Denmark and Finland. No Spotify account, developer API, track comparisons or rankings are used.
 
+The browser probe has succeeded on a GitHub-hosted runner for all four markets. Automatic scheduled delivery is still disabled. A private subscription backend now exists under [`service/`](service/README.md), with tests for exact `@umusic.com` validation, confirmation, country preferences, unsubscribe and signed monitor ingestion. The signup frontend and Cloudflare backend deployment are not live yet. The Resend API key is stored as an encrypted GitHub Actions secret; no key is committed here.
+
 ## Local probe
 
 Requires Node.js 24 or later:
