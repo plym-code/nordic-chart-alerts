@@ -1,0 +1,19 @@
+name: Check Resend sender configuration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulated-delivery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Send to Resend's simulated delivery address
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+        run: node src/mail-check.mjs

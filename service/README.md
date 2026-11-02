@@ -1,6 +1,6 @@
 # Private subscription service
 
-Implemented and tested locally; not yet deployed. The public signup page is not yet built. The GitHub monitor currently remains a manual probe with scheduled delivery disabled.
+Implemented and tested locally; not yet deployed. The public signup page is not yet built. The GitHub monitor has a quiet baseline and its ten-minute schedule is enabled in single-recipient test mode. Its owner-recipient and sender are encrypted GitHub configuration, not committed here.
 
 ## Intended deployment
 
