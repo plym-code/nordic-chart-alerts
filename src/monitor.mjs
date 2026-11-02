@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { createHmac } from 'node:crypto';
 import { MARKETS, DATE_PATTERN, parseDate, updateState } from './core.mjs';
 
 const probe = process.argv.includes('--probe');
@@ -8,7 +9,9 @@ const codes = (process.env.COUNTRIES || 'se,no,dk,fi').split(',');
 if (codes.some(code => !MARKETS[code])) throw new Error('Unknown country code');
 const statePath = process.env.STATE_FILE || 'state.json';
 const email = { key: process.env.RESEND_API_KEY, from: process.env.ALERT_FROM, to: process.env.ALERT_TO };
-if (!probe && Object.values(email).some(value => !value)) throw new Error('Configure RESEND_API_KEY, ALERT_FROM and ALERT_TO, or use --probe');
+const ingest = process.env.MONITOR_INGEST_URL;
+if (!probe && ingest && !process.env.INGEST_SECRET) throw new Error('Configure INGEST_SECRET');
+if (!probe && !ingest && Object.values(email).some(value => !value)) throw new Error('Configure the subscription service, direct email settings, or use --probe');
 
 async function persist(state) {
   await mkdir(dirname(statePath), { recursive: true });
@@ -49,7 +52,16 @@ try {
 } finally { await browser.close(); }
 console.log(JSON.stringify({ checkedAt: new Date().toISOString(), browserSeconds: (Date.now() - started) / 1000, observations }, null, 2));
 if (observations.some(item => item.error)) process.exitCode = 1;
-if (!probe) {
+if (!probe && ingest) {
+  const body=JSON.stringify({observations});
+  const time=String(Math.floor(Date.now()/1000));
+  const response=await fetch(ingest, {
+    method:'POST', signal:AbortSignal.timeout(30000),
+    headers:{'Content-Type':'application/json','X-Monitor-Time':time,'X-Monitor-Signature':createHmac('sha256',process.env.INGEST_SECRET).update(`${time}.${body}`).digest('base64url')},body,
+  });
+  if(!response.ok) throw new Error(`INGEST_HTTP_${response.status()}`);
+  console.log('Chart dates accepted by the private subscription service.');
+} else if (!probe) {
   let previous;
   try { previous = JSON.parse(await readFile(statePath, 'utf8')); }
   catch (error) { if (error.code !== 'ENOENT') throw error; previous = {}; }

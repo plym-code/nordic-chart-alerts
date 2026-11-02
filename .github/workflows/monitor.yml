@@ -27,6 +27,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm test
       - run: npx playwright install --with-deps chromium
       - name: Check chart dates
         env:
@@ -34,6 +35,8 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ALERT_FROM: ${{ secrets.ALERT_FROM }}
           ALERT_TO: ${{ secrets.ALERT_TO }}
+          MONITOR_INGEST_URL: ${{ vars.MONITOR_INGEST_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
         run: |
           if [ "$PROBE" = "true" ]; then
             npm run check -- --probe
@@ -41,7 +44,7 @@ jobs:
             npm run check
           fi
       - name: Save dates and queued emails
-        if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.probe) }}
+        if: ${{ always() && !vars.MONITOR_INGEST_URL && !(github.event_name == 'workflow_dispatch' && inputs.probe) }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

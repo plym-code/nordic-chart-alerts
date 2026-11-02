@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nordic-chart-subscriptions",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": {
+    "SITE_URL": "https://plym-code.github.io/nordic-chart-alerts",
+    "ALERT_FROM": "Nordic Chart Alerts <charts@atle.no>",
+    "SENDING_ENABLED": "false"
+  },
+  "d1_databases": [{ "binding": "DB", "database_name": "nordic-chart-subscribers", "database_id": "REPLACE_AFTER_DATABASE_CREATION" }],
+  "triggers": { "crons": ["* * * * *"] }
+}
